@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LinkIcon, ArrowRightIcon, Loader2Icon, ZapIcon } from 'lucide-react';
 import { ResultCard } from './ResultCard';
 
+const API_URL = import.meta.env.VITE_API_URL as string;
+
 export interface ShortLink {
   id: string;
   original: string;
@@ -45,36 +47,52 @@ export function Shortener() {
   const [loading, setLoading] = useState(false);
   const [links, setLinks] = useState<ShortLink[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loading) return;
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (loading) return;
+  setError(null);
 
-    if (!input.trim()) {
-      setError('Cole um link para encurtar.');
-      return;
-    }
-    if (!isValidUrl(input)) {
-      setError('Esse link não parece válido. Verifique e tente de novo.');
-      return;
+  if (!input.trim()) {
+    setError('Cole um link para encurtar.');
+    return;
+  }
+  if (!isValidUrl(input)) {
+    setError('Esse link não parece válido. Verifique e tente de novo.');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/api/shorten`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: normalizeUrl(input) })
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error ?? 'Não foi possível encurtar esse link agora.');
     }
 
-    setLoading(true);
-    // Simula o processamento no cliente
-    setTimeout(() => {
-      const code = generateCode();
-      const newLink: ShortLink = {
-        id: `${Date.now()}`,
-        original: normalizeUrl(input),
-        code,
-        short: `${DOMAIN}/${code}`,
-        createdAt: Date.now()
-      };
-      setLinks((prev) => [newLink, ...prev]);
-      setInput('');
-      setLoading(false);
-    }, 700);
-  };
+    const data = await res.json();
+    const shortHost = API_URL.replace(/^https?:\/\//, '');
+
+    const newLink: ShortLink = {
+      id: data.code,
+      original: data.originalUrl,
+      code: data.code,
+      short: `${shortHost}/${data.code}`,
+      createdAt: data.createdAt * 1000
+    };
+
+    setLinks((prev) => [newLink, ...prev]);
+    setInput('');
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Erro ao encurtar o link.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="w-full min-h-full px-5 py-8 sm:px-8 sm:py-10">
