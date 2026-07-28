@@ -4,6 +4,7 @@ import { LinkIcon, ArrowRightIcon, Loader2Icon, ZapIcon } from 'lucide-react';
 import { ResultCard } from './ResultCard';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
+const SHORT_DOMAIN = (import.meta.env.VITE_SHORT_DOMAIN as string) || API_URL.replace(/^https?:\/\//, '');
 
 export interface ShortLink {
   id: string;
@@ -75,7 +76,7 @@ export function Shortener() {
     }
 
     const data = await res.json();
-    const shortHost = API_URL.replace(/^https?:\/\//, '');
+    const shortHost = SHORT_DOMAIN;
 
     const newLink: ShortLink = {
       id: data.code,
