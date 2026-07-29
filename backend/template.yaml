@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Encurtador de URL - Quarkus + AWS Lambda + DynamoDB (par código -> URL)
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 256
+
+Parameters:
+  BaseUrl:
+    Type: String
+    Description: URL pública usada para montar os links curtos (ex. https://short.suaempresa.com)
+    Default: https://short.example.com
+
+Resources:
+
+  UrlShortenerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: url-shortener
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  UrlShortenerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: url-shortener
+      # Handler fixo exigido pelo runtime "provided" do Quarkus
+      Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+      Runtime: java17
+      CodeUri: target/function.zip
+      MemorySize: 512
+      Timeout: 10
+      Environment:
+        Variables:
+          APP_DYNAMODB_TABLE_NAME: !Ref UrlShortenerTable
+          QUARKUS_DYNAMODB_AWS_REGION: !Ref AWS::Region
+          QUARKUS_DYNAMODB_AWS_CREDENTIALS_TYPE: default
+          APP_BASE_URL: !Ref BaseUrl
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlShortenerTable
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Description: URL base da API (API Gateway HTTP API)
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  TableName:
+    Value: !Ref UrlShortenerTable
