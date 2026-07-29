@@ -1,15 +1,14 @@
-# Encurtador de URL
+# 🔗 Encurtador de URL
 
-Aplicação web para encurtar links: cole uma URL longa e receba um link curto,
-pronto para compartilhar. Acesse em produção: **[encurtadorlink.link](https://encurtadorlink.link)**
+Aplicação web para encurtar links: cole uma URL longa e receba um link curto, pronto para compartilhar. Acesse em: **[encurtadorlink.link](https://encurtadorlink.link)**
 
-![Tela inicial da aplicação](docs/screenshot-home.png)
-![Link encurtado gerado](docs/screenshot-resultado.png)
+### Tela inicial
+![Tela inicial da aplicação](src/urlShortHome.png)
 
-> As imagens acima ficam na pasta `docs/` do repositório — basta adicionar os
-> prints correspondentes nesse caminho para que apareçam aqui.
+### Link gerado
+![Link encurtado gerado](src/urlShortLink.png)
 
-## Stack e conceitos aplicados
+## 🛠️ Stack e conceitos aplicados
 
 - **Java 17 + Quarkus** — framework do backend REST, injeção de dependência
   (CDI), validação de payload (Hibernate Validator) e empacotamento otimizado
@@ -36,7 +35,7 @@ pronto para compartilhar. Acesse em produção: **[encurtadorlink.link](https://
   CloudWatch, permitindo rastrear falhas de invocação da Lambda em produção.
 - **React + Vite + TypeScript** — interface do usuário, hospedada na Vercel.
 
-## Arquitetura
+## 🏗️ Arquitetura
 
 ```
 Front-end (React, Vercel)
@@ -56,7 +55,7 @@ Domain do API Gateway, com certificado emitido via ACM — é ele quem responde
 tanto aos redirecionamentos de link curto quanto (na rota raiz) redireciona
 para a interface web.
 
-## Estrutura do backend
+## 📍 Estrutura do backend
 
 ```
 backend/src/main/java/org/acme/shortener/
@@ -71,44 +70,7 @@ backend/src/main/java/org/acme/shortener/
 └── exception/                 # Exceções de domínio + mapeamento para JSON
 ```
 
-## Endpoints
-
-### Criar link curto
-```
-POST /api/shorten
-Content-Type: application/json
-
-{
-  "url": "https://exemplo.com/uma-pagina-com-url-bem-longa",
-  "customCode": "meu-alias"   // opcional
-}
-```
-Resposta `201 Created`:
-```json
-{
-  "code": "meu-alias",
-  "shortUrl": "https://encurtadorlink.link/meu-alias",
-  "originalUrl": "https://exemplo.com/uma-pagina-com-url-bem-longa",
-  "createdAt": 1753500000
-}
-```
-
-### Redirecionar (link público)
-```
-GET /{code}   -> HTTP 302 Location: <url original>
-```
-
-### Consultar metadados sem redirecionar
-```
-GET /api/{code}
-```
-
-### Erros (JSON padronizado)
-- `404` código não encontrado
-- `409` código customizado já em uso
-- `400` payload inválido (ex.: URL sem http/https)
-
-## Rodando o backend localmente
+## ⚙️ Rodando o backend localmente
 
 Requer Java 17, Maven Wrapper (incluso) e uma conta AWS configurada
 (`aws configure`) para uso da DynamoDB real em modo de desenvolvimento.
@@ -124,21 +86,7 @@ curl -X POST http://localhost:8080/api/shorten \
   -d '{"url":"https://quarkus.io"}'
 ```
 
-## Deploy do backend (infraestrutura como código)
-
-```bash
-cd backend
-./mvnw clean package
-sam deploy
-```
-
-O `template.yaml` provisiona, em uma única execução:
-- Tabela DynamoDB (billing on-demand, TTL habilitado)
-- Função Lambda com IAM role de permissão mínima (CRUD restrito à própria tabela)
-- HTTP API no API Gateway, incluindo rota para a raiz do domínio
-- Custom Domain associado a um certificado ACM (`encurtadorlink.link`)
-
-## Detalhes de implementação
+## 🎯 Detalhes de implementação
 
 - **Idempotência na criação de código**: `saveIfAbsent` usa uma
   `ConditionExpression attribute_not_exists(code)` no DynamoDB, garantindo que
@@ -150,3 +98,6 @@ O `template.yaml` provisiona, em uma única execução:
   consumir a API a partir do navegador.
 - **TTL opcional**: campo `expiresAt` já mapeado, permitindo expiração
   automática de links sem lógica adicional de limpeza.
+
+---
+Desenvolvido por Amanda Matias.
